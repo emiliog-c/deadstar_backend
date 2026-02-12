@@ -76,6 +76,14 @@ module.exports = defineConfig({
               prefix: "product_images/",
             },
           },
+
+        ],
+      },
+    },
+    {
+      resolve: "@medusajs/medusa/payment",
+      options: {
+        providers: [
           {
             resolve: "@medusajs/medusa/payment-stripe",
             id: "stripe",
