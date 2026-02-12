@@ -5,6 +5,10 @@ yarn-error.log*
 .git
 .gitignore
 README.md
+.env
+.env.*
+!.env.template
+!.env.example
 .env.test
 .nyc_output
 coverage
