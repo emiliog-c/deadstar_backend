@@ -2,20 +2,54 @@ import { loadEnv, defineConfig } from '@medusajs/framework/utils'
 
 loadEnv(process.env.NODE_ENV || 'development', process.cwd())
 
+const requiredEnv = (name: string) => {
+  const value = process.env[name]
+
+  if (!value) {
+    throw new Error(`Missing required environment variable: ${name}`)
+  }
+
+  return value
+}
+
+const isProduction = process.env.NODE_ENV === "production"
+const isLocalProduction =
+  isProduction &&
+  process.env.MEDUSA_LOCAL_PROD === "true"
+const shouldUseDbSsl =
+  process.env.DB_SSL === "true" ||
+  (isProduction && process.env.DB_SSL !== "false")
+const dbSslRejectUnauthorized =
+  process.env.DB_SSL_REJECT_UNAUTHORIZED === "true"
+
 module.exports = defineConfig({
   projectConfig: {
-    databaseUrl: process.env.DATABASE_URL,
+    databaseUrl: requiredEnv("DATABASE_URL"),
     http: {
-      storeCors: process.env.STORE_CORS!,
-      adminCors: process.env.ADMIN_CORS!,
-      authCors: process.env.AUTH_CORS!,
-      jwtSecret: process.env.JWT_SECRET || "supersecret",
-      cookieSecret: process.env.COOKIE_SECRET || "supersecret",
+      storeCors: requiredEnv("STORE_CORS"),
+      adminCors: requiredEnv("ADMIN_CORS"),
+      authCors: requiredEnv("AUTH_CORS"),
+      jwtSecret: requiredEnv("JWT_SECRET"),
+      cookieSecret: requiredEnv("COOKIE_SECRET"),
     },
-    databaseDriverOptions: {
-      ssl: false,
-      sslmode: "disable",
-    },
+    cookieOptions: isLocalProduction
+      ? {
+          sameSite: "lax",
+          secure: false,
+        }
+      : undefined,
+    databaseDriverOptions: shouldUseDbSsl
+      ? {
+          connection: {
+            ssl: {
+              rejectUnauthorized: dbSslRejectUnauthorized,
+            },
+          },
+        }
+      : {
+          ssl: false,
+          sslmode: "disable",
+        },
   },
   admin: {
     vite: (config) => {
