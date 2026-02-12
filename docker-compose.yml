@@ -13,28 +13,46 @@ services:
   # This service runs the Medusa backend application
   # and the admin dashboard.
   medusa:
-    image: medusa_backend:dev
-    build: .
+    image: medusa_backend:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: medusa_backend
     restart: unless-stopped
     depends_on:
       - redis
     ports:
       - "9000:9000"
-      - "5173:5173"
     environment:
-      - NODE_ENV=development
+      - NODE_ENV=${NODE_ENV:-production}
+      - MEDUSA_LOCAL_PROD=${MEDUSA_LOCAL_PROD:-false}
       - DATABASE_URL=${DATABASE_URL}
+      - DB_SSL=${DB_SSL:-true}
+      - DB_SSL_REJECT_UNAUTHORIZED=${DB_SSL_REJECT_UNAUTHORIZED:-false}
       - REDIS_URL=redis://redis:6379
-      - CHOKIDAR_USEPOLLING=1
-      - WATCHPACK_POLLING=true
+      - JWT_SECRET=${JWT_SECRET}
+      - COOKIE_SECRET=${COOKIE_SECRET}
+      - STORE_CORS=${STORE_CORS}
+      - ADMIN_CORS=${ADMIN_CORS}
+      - AUTH_CORS=${AUTH_CORS}
+      - STRIPE_API_KEY=${STRIPE_API_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+      - R2_FILE_URL=${R2_FILE_URL}
+      - R2_ACCESS_KEY_ID=${R2_ACCESS_KEY_ID}
+      - R2_SECRET_ACCESS_KEY=${R2_SECRET_ACCESS_KEY}
+      - R2_REGION=${R2_REGION}
+      - R2_BUCKET=${R2_BUCKET}
+      - R2_ENDPOINT=${R2_ENDPOINT}
     env_file:
       - .env
-    volumes:
-      - .:/server
-      - /server/node_modules
     networks:
       - medusa_network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:9000/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
 volumes:
   postgres_data:
