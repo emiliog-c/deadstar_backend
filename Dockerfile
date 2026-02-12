@@ -1,23 +1,61 @@
-# Development Dockerfile for Medusa
-FROM node:20-alpine
+# Build stage
+FROM node:20-alpine AS builder
 
-# Set working directory
 WORKDIR /server
 
 # Install pnpm globally
-RUN npm install pnpm -g
+RUN npm install -g pnpm
 
-# Copy package files and yarn config
-COPY package.json pnpm-lock.yaml* ./
+# Copy package files
+COPY package.json pnpm-lock.yaml ./
 
-# Install dependencies using pnpm
+# Install dependencies
 RUN pnpm install --frozen-lockfile
 
 # Copy source code
 COPY . .
 
-# Expose the port Medusa runs on
-EXPOSE 9000 5173
+# Build-time placeholders required by Medusa config
+ENV DATABASE_URL=postgres://localhost:5432/medusa-build
+ENV STORE_CORS=http://localhost:3000
+ENV ADMIN_CORS=http://localhost:9000
+ENV AUTH_CORS=http://localhost:3000,http://localhost:9000
+ENV JWT_SECRET=build-secret
+ENV COOKIE_SECRET=build-secret
+ENV DB_SSL=false
 
-# Start with migrations and then the development server
-ENTRYPOINT ["./start.sh"]
+# Build for production
+RUN pnpm build
+
+# Production stage
+FROM node:20-alpine
+
+WORKDIR /server
+
+ENV NODE_ENV=production
+
+# Install pnpm globally
+RUN npm install -g pnpm
+
+# Copy package files
+COPY package.json pnpm-lock.yaml ./
+
+# Install only production dependencies
+RUN pnpm install --frozen-lockfile --prod
+
+# Copy built application from builder
+COPY --from=builder /server/.medusa ./.medusa
+COPY --from=builder /server/.medusa/server/public ./public
+COPY --from=builder /server/.medusa/server/src ./src
+COPY --from=builder /server/.medusa/server/medusa-config.js ./medusa-config.js
+COPY --from=builder /server/.medusa/server/instrumentation.js ./instrumentation.js
+
+# Expose port
+EXPOSE 9000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:9000/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
+
+# Start production server (skip rebuild since we already built)
+CMD ["pnpm", "medusa", "start"]
