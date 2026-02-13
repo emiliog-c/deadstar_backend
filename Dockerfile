@@ -40,15 +40,15 @@ RUN npm install -g pnpm
 # Copy package files
 COPY package.json pnpm-lock.yaml ./
 
-# Install runtime + build dependencies (needed because start script runs medusa build)
-RUN pnpm install --frozen-lockfile
+# Install only production dependencies
+RUN pnpm install --frozen-lockfile --prod
 
-# Copy source application from builder
-COPY --from=builder /server/src ./src
-COPY --from=builder /server/medusa-config.ts ./medusa-config.ts
-COPY --from=builder /server/instrumentation.ts ./instrumentation.ts
-COPY --from=builder /server/tsconfig.json ./tsconfig.json
-COPY --from=builder /server/static ./static
+# Copy built application from builder
+COPY --from=builder /server/.medusa ./.medusa
+COPY --from=builder /server/.medusa/server/public ./public
+COPY --from=builder /server/.medusa/server/src ./src
+COPY --from=builder /server/.medusa/server/medusa-config.js ./medusa-config.js
+COPY --from=builder /server/.medusa/server/instrumentation.js ./instrumentation.js
 
 # Expose port
 EXPOSE 9000
@@ -57,5 +57,5 @@ EXPOSE 9000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   CMD node -e "require('http').get('http://localhost:9000/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
 
-# Start server (runs build then start via package.json)
-CMD ["pnpm", "start"]
+# Start production server (skip rebuild since we already built)
+CMD ["pnpm", "medusa", "start"]
