@@ -134,7 +134,7 @@ module.exports = defineConfig({
         providers: [
           // ...
           {
-            resolve: "@medusajs/medusa/resend",
+            resolve: "./src/modules/resend",
             id: "resend",
             options: {
               channels: ["email"],
