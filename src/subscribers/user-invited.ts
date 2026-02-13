@@ -23,7 +23,14 @@ export default async function inviteCreatedHandler({
     },
   })
 
+  const configuredAdminBackendUrl =
+    config?.admin?.backendUrl && config.admin.backendUrl !== "/"
+      ? config.admin.backendUrl
+      : undefined
+
   const backendUrl =
+    process.env.MEDUSA_BACKEND_URL ||
+    configuredAdminBackendUrl ||
     process.env.ADMIN_CORS
       ?.split(",")
       .map((value) => value.trim())
