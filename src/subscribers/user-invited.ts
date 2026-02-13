@@ -23,9 +23,18 @@ export default async function inviteCreatedHandler({
     },
   })
 
-  const backend_url = config.admin.backendUrl !== "/" ? config.admin.backendUrl :
-    process.env.MEDUSA_BACKEND_URL 
-  const adminPath = config.admin.path
+  const backendUrl =
+    process.env.ADMIN_CORS
+      ?.split(",")
+      .map((value) => value.trim())
+      .find(Boolean) ||
+    "http://localhost:9000"
+
+  const normalizedBackendUrl = backendUrl.replace(/\/$/, "")
+  const rawAdminPath = config?.admin?.path || "/app"
+  const normalizedAdminPath = rawAdminPath.startsWith("/")
+    ? rawAdminPath
+    : `/${rawAdminPath}`
 
   await notificationModuleService.createNotifications({
     to: invite.email,
@@ -33,7 +42,7 @@ export default async function inviteCreatedHandler({
     template: "user-invited",
     channel: "email",
     data: {
-      invite_url: `${backend_url}${adminPath}/invite?token=${invite.token}`,
+      invite_url: `${normalizedBackendUrl}${normalizedAdminPath}/invite?token=${encodeURIComponent(invite.token)}`,
     },
   })
 }
