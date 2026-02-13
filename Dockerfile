@@ -48,7 +48,7 @@ COPY --from=builder /server/.medusa ./.medusa
 COPY --from=builder /server/.medusa/server/public ./public
 COPY --from=builder /server/.medusa/server/src ./src
 COPY --from=builder /server/.medusa/server/medusa-config.js ./medusa-config.js
-COPY --from=builder /server/.medusa/server/instrumentation.js ./instrumentation.js
+RUN if [ -f ./.medusa/server/instrumentation.js ]; then cp ./.medusa/server/instrumentation.js ./instrumentation.js; fi
 
 # Expose port
 EXPOSE 9000
