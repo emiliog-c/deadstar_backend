@@ -45,9 +45,9 @@ RUN pnpm install --frozen-lockfile --prod
 
 # Copy built application from builder
 COPY --from=builder /server/.medusa ./.medusa
-COPY --from=builder /server/.medusa/server/public ./public
-COPY --from=builder /server/.medusa/server/src ./src
-COPY --from=builder /server/.medusa/server/medusa-config.js ./medusa-config.js
+RUN if [ -d ./.medusa/server/public ]; then cp -R ./.medusa/server/public ./public; fi
+RUN if [ -d ./.medusa/server/src ]; then cp -R ./.medusa/server/src ./src; fi
+RUN if [ -f ./.medusa/server/medusa-config.js ]; then cp ./.medusa/server/medusa-config.js ./medusa-config.js; fi
 RUN if [ -f ./.medusa/server/instrumentation.js ]; then cp ./.medusa/server/instrumentation.js ./instrumentation.js; fi
 
 # Expose port
