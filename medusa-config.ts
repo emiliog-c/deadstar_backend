@@ -52,6 +52,8 @@ module.exports = defineConfig({
         },
   },
   admin: {
+    backendUrl: process.env.MEDUSA_BACKEND_URL || "http://localhost:9000",
+    path: process.env.ADMIN_PATH || "/app",
     vite: (config) => {
       return {
         server: {

@@ -24,7 +24,7 @@ export default async function inviteCreatedHandler({
   })
 
   const backend_url = config.admin.backendUrl !== "/" ? config.admin.backendUrl :
-    "http://localhost:9000"
+    process.env.MEDUSA_BACKEND_URL 
   const adminPath = config.admin.path
 
   await notificationModuleService.createNotifications({
